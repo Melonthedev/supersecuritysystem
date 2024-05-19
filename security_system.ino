@@ -119,10 +119,19 @@ void execution() {
   lcd.clear();
 }
 
+String currentUsername;
+
 void verifyCode(String username) {
   Serial.println("Starting code verification");
   inAuthenticationProcess = true;
-  
+  lcd.clear();
+  lcd.print(verificationMessage);
+  currentUsername = username;
+  verificationLoop();
+}
+
+
+void verificationLoop() {
   verificationStart:
   //lcd.clear();
   //lcd.print(verificationMessage);
@@ -182,12 +191,13 @@ void verifyCode(String username) {
      lcd.setCursor(1, 0);
      lcd.print("Access granted");
      delay(300);
-     String message = "Welcome " + username;
+     String message = "Welcome " + currentUsername;
      int cursorPos = (16 - message.length()) / 2; 
      lcd.setCursor(cursorPos, 1);
      lcd.print(message);
      delay(2000);
      lcd.clear();
+     currentUsername = "";
      inAuthenticationProcess = false;
     } else {
      Serial.println ("Code falsch, Schloss gesperrt");
@@ -211,7 +221,7 @@ void verifyCode(String username) {
 void loop(){
 
   if (inAuthenticationProcess == true) {
-    verifyCode("PENIS");
+    verificationLoop();
     return;
   }
   
@@ -287,8 +297,5 @@ void loop(){
   
   delay (2000);
   digitalWrite (GREEN_LIGHT, LOW);
-  lcd.clear();
-  lcd.print(verificationMessage);
   verifyCode(username);
-  //lcd.clear();
 }
