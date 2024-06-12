@@ -77,6 +77,24 @@ AuthorizedUser* getUserByCardId(long id) {
   return NULL;
 }
 
+void printCenteredText(String text, String text2) {
+  lcd.clear();
+  if (text != "") {
+    int cursorPos = (16 - text.length()) / 2; 
+    lcd.setCursor(cursorPos, 0);
+    lcd.print(text);
+  }
+  if (text2 != "") {
+    int cursorPos = (16 - text2.length()) / 2; 
+    lcd.setCursor(cursorPos, 1);
+    lcd.print(text2);
+  }
+}
+
+void printCenteredText(String text) {
+  printCenteredText(text, "");
+}
+
 void accessGrantedSound() {
   tone(BUZZER, NOTE_E7);
   delay(50);
@@ -92,35 +110,18 @@ void accessGrantedSound() {
 
 
 void execution() {
-  lcd.clear();
-  lcd.print ("INITIATING SELF");
-  lcd.setCursor(0, 1);
-  lcd.print("DEFENCE PROTOCOL!");
-
+  printCenteredText("INITIATING SELF", "DEFENCE PROTOCOL!");
   delay(3000);
-  lcd.clear();
-  lcd.setCursor(7, 0);
-  lcd.print("3");
-
+  printCenteredText("3");
   delay(1000);
-  lcd.clear();
-  lcd.setCursor(7, 0);
-  lcd.print("2");
-
+  printCenteredText("2");
   delay(1000);
-  lcd.clear();
-  lcd.setCursor(7, 0);
-  lcd.print("1");
-
+  printCenteredText("1");
   delay(1000);
-  lcd.clear();
-  lcd.setCursor(5, 0);
-  lcd.print("DIE!!!");
+  printCenteredText("DIE!!!");
   digitalWrite(TASER_PIN, HIGH);
-
   delay (1500);
   digitalWrite(TASER_PIN, LOW);
-
   delay (1500);
   lcd.clear();
 }
@@ -128,8 +129,8 @@ void execution() {
 AuthorizedUser* currentUser;
 
 void verifyCode(AuthorizedUser* user) {
-  Serial.println("Starting code verification");
   inAuthenticationProcess = true;
+  Serial.println("Starting code verification");
   lcd.clear();
   lcd.print(verificationMessage);
   currentUser = user;
@@ -143,22 +144,16 @@ void verificationLoop() {
   if (!pressedKey) { return; }
 
   if (pressedKey == '*') {
-   Serial.println("Aborted Code verification.");
-   lcd.clear();
-   lcd.setCursor(4, 0);
-   lcd.print("Aborted");
-   lcd.setCursor(2, 1);
-   lcd.print("Verification");
-   inAuthenticationProcess = false;
-   return;
+    inAuthenticationProcess = false;
+    Serial.println("Aborted Code verification.");
+    printCenteredText("Aborted", "Verification");
+    delay(1000);
+    lcd.clear();
+    return;
   }
 
   if (pressedKey == '#') {
-    lcd.clear();
-    lcd.setCursor(5, 0);
-    lcd.print("Input");
-    lcd.setCursor(4, 1);
-    lcd.print("Resetted");
+    printCenteredText("Input", "Resetted");
     delay(2000);
     lcd.clear();
     z1=0; z2=1; z3=1; z4=1;
@@ -199,14 +194,10 @@ void verificationLoop() {
       //servoblau.write(0);
       digitalWrite(RED_LIGHT, LOW);
       digitalWrite(GREEN_LIGHT, HIGH);
-      lcd.clear();
-      lcd.setCursor(1, 0);
-      lcd.print("Access granted");
+      printCenteredText("Access granted");
       delay(300);
       String message = "Welcome " + currentUser->username;
-      int cursorPos = (16 - message.length()) / 2; 
-      lcd.setCursor(cursorPos, 1);
-      lcd.print(message);
+      printCenteredText("", message);
       delay(2000);
       lcd.clear();
       currentUser = NULL;
@@ -215,11 +206,8 @@ void verificationLoop() {
       Serial.println ("Code falsch");
       digitalWrite(RED_LIGHT, HIGH);
       digitalWrite(GREEN_LIGHT, LOW);
-      lcd.clear();
-      lcd.setCursor(1, 0);
-      lcd.print("Access denied!");
+      printCenteredText("Access denied!");
       delay(2000);
-      lcd.clear();
       z1=0; z2=1; z3=1; z4=1;
       verificationMessage = "Code: ";
       lcd.clear();
@@ -230,17 +218,14 @@ void verificationLoop() {
 }
 
 
-void loop(){
+void loop() {
 
   if (inAuthenticationProcess == true) {
     verificationLoop();
     return;
   }
-  
-  lcd.setCursor(5, 0);
-  lcd.print("Welcome");
-  lcd.setCursor(2, 1);
-  lcd.print("Insert chipcard");
+
+  printCenteredText("Welcome", "Insert chipcard");
 
   // Klingel
   if (digitalRead(KLINGEL_PIN) == HIGH) {
@@ -274,17 +259,10 @@ void loop(){
     Serial.println(remainingAttempts);
     digitalWrite (BUZZER, HIGH);
     digitalWrite (RED_LIGHT, HIGH);
-    lcd.clear();
-    lcd.setCursor(1, 0);
-    lcd.print("Access denied!");
+    printCenteredText("Access denied!");
     delay (2000);
-    lcd.clear();
-    lcd.setCursor(3, 0);
-    lcd.print("Remaining");
-    lcd.setCursor(2, 1);
-    lcd.print("attempts: ");
-    lcd.setCursor(12, 1);
-    lcd.print(remainingAttempts);
+    String line2 = "attempts: " + remainingAttempts;
+    printCenteredText("Remaining", line2);
     delay (2000);
     if (remainingAttempts <= 0) {
       remainingAttempts = 3;
@@ -296,11 +274,7 @@ void loop(){
   // Access granted
   digitalWrite (GREEN_LIGHT, HIGH); 
   delay(100);
-  lcd.clear();
-  lcd.setCursor(4, 0);
-  lcd.print("Chipcard");
-  lcd.setCursor(4, 1);
-  lcd.print("Verified");
+  printCenteredText("Chipcard", "Verified");
   accessGrantedSound();
   delay(2000);
   digitalWrite (GREEN_LIGHT, LOW);
