@@ -10,10 +10,10 @@
 #define RFID_RST_PIN A1
 #define SERVO A3
 #define KLINGEL_PIN A2
-#define BUZZER 3
-#define TASER_PIN 11
-#define GREEN_LIGHT 2
-#define RED_LIGHT 4
+#define BUZZER A1
+#define TASER_PIN A0
+#define GREEN_LIGHT 1
+#define RED_LIGHT 0
 
 // Keypad
 char C1, C2, C3, C4;
@@ -39,13 +39,13 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 struct AuthorizedUser {
   long chipId;
   String username;
-  char code[];
+  char code[4];
 };
 
 AuthorizedUser authorizedUsers[3] = {
-  {2048270, "Marlon", {'1', '2', '3', 'A'}},
-  {480830, "Ferdi", {'1', '2', '3', 'A'}},
-  {2562190, "Blau", {'1', '2', '3', 'A'}}
+  {2562190, "Marlon", {'1', '2', '3', 'A'}},
+  {389620, "Ferdi", {'A', 'B', 'B', 'A'}},
+  {2076320, "Jakob", {'3', '1', '4', '8'}}
 };
 
 int remainingAttempts = 3;
@@ -108,6 +108,19 @@ void accessGrantedSound() {
   noTone(BUZZER);
 }
 
+void accessDeniedSound() {
+  tone(BUZZER, NOTE_E7);
+  delay(50);
+  noTone(BUZZER);
+  delay(50);
+  tone(BUZZER, NOTE_E7);
+  delay(100);
+  noTone(BUZZER);
+  tone(BUZZER, NOTE_E7);
+  delay(50);
+  noTone(BUZZER);
+}
+
 
 void execution() {
   printCenteredText("INITIATING SELF", "DEFENCE PROTOCOL!");
@@ -138,11 +151,55 @@ void verifyCode(AuthorizedUser* user) {
 }
 
 
+void playAccessGrantedJingle() {
+  tone(BUZZER, NOTE_E6);
+  delay(100);
+  noTone(BUZZER);
+  delay(100);
+  
+  tone(BUZZER, NOTE_G6);
+  delay(100);
+  noTone(BUZZER);
+  delay(100);
+  
+  tone(BUZZER, NOTE_A6);
+  delay(100);
+  noTone(BUZZER);
+  delay(100);
+  
+  tone(BUZZER, NOTE_B6);
+  delay(100);
+  noTone(BUZZER);
+  delay(100);
+  
+  tone(BUZZER, NOTE_E7);
+  delay(200);
+  noTone(BUZZER);
+}
+
+void playAccessDeniedJingle() {
+  tone(BUZZER, NOTE_E7);
+  delay(100);
+  noTone(BUZZER);
+  delay(100);
+
+  tone(BUZZER, NOTE_D7);
+  delay(100);
+  noTone(BUZZER);
+  delay(100);
+
+  tone(BUZZER, NOTE_C7);
+  delay(300);
+  noTone(BUZZER);
+}
+
 void verificationLoop() {
   verificationStart:
   pressedKey = keyfield.getKey();
   if (!pressedKey) { return; }
-
+  tone(BUZZER, NOTE_E7);
+  delay(50);
+  noTone(BUZZER);
   if (pressedKey == '*') {
     inAuthenticationProcess = false;
     Serial.println("Aborted Code verification.");
@@ -197,16 +254,20 @@ void verificationLoop() {
       printCenteredText("Access granted");
       delay(300);
       String message = "Welcome " + currentUser->username;
-      printCenteredText("", message);
+      printCenteredText("Access granted", message);
+      playAccessGrantedJingle();
       delay(2000);
       lcd.clear();
       currentUser = NULL;
       inAuthenticationProcess = false;
+      z1=0; z2=1; z3=1; z4=1;
+      verificationMessage = "Code: ";
     } else {
       Serial.println ("Code falsch");
       digitalWrite(RED_LIGHT, HIGH);
       digitalWrite(GREEN_LIGHT, LOW);
       printCenteredText("Access denied!");
+      playAccessDeniedJingle();
       delay(2000);
       z1=0; z2=1; z3=1; z4=1;
       verificationMessage = "Code: ";
@@ -225,7 +286,10 @@ void loop() {
     return;
   }
 
-  printCenteredText("Welcome", "Insert chipcard");
+  lcd.setCursor(5, 0);
+  lcd.print("Welcome");
+  lcd.setCursor(0, 1);
+  lcd.print("Insert Chipcard");
 
   // Klingel
   if (digitalRead(KLINGEL_PIN) == HIGH) {
@@ -257,12 +321,17 @@ void loop() {
     Serial.println("Zu dieser ID wurde kein Systemeintrag gefunden.");
     Serial.print("Verbleibende Versuche: ");
     Serial.println(remainingAttempts);
-    digitalWrite (BUZZER, HIGH);
-    digitalWrite (RED_LIGHT, HIGH);
+    digitalWrite(RED_LIGHT, HIGH);
     printCenteredText("Access denied!");
-    delay (2000);
-    String line2 = "attempts: " + remainingAttempts;
-    printCenteredText("Remaining", line2);
+    accessDeniedSound();
+    delay(2000);
+    lcd.clear();
+    lcd.setCursor(3, 0);
+    lcd.print("Remaining");
+    lcd.setCursor(2, 1);
+    lcd.print("attempts: ");
+    lcd.setCursor(12, 1);
+    lcd.print(remainingAttempts);
     delay (2000);
     if (remainingAttempts <= 0) {
       remainingAttempts = 3;
@@ -278,5 +347,6 @@ void loop() {
   accessGrantedSound();
   delay(2000);
   digitalWrite (GREEN_LIGHT, LOW);
+  lcd.clear();
   verifyCode(user);
 }
