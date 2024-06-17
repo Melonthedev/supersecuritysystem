@@ -108,7 +108,6 @@ void accessGrantedSound() {
   noTone(BUZZER);
 }
 
-
 void accessDeniedSound() {
   tone(BUZZER, NOTE_E7);
   delay(50);
@@ -121,6 +120,7 @@ void accessDeniedSound() {
   delay(50);
   noTone(BUZZER);
 }
+
 
 void execution() {
   printCenteredText("INITIATING SELF", "DEFENCE PROTOCOL!");
