@@ -152,44 +152,70 @@ void verifyCode(AuthorizedUser* user) {
 
 
 void playAccessGrantedJingle() {
-  tone(BUZZER, NOTE_E6);
-  delay(100);
-  noTone(BUZZER);
-  delay(100);
-  
-  tone(BUZZER, NOTE_G6);
-  delay(100);
-  noTone(BUZZER);
-  delay(100);
-  
-  tone(BUZZER, NOTE_A6);
-  delay(100);
-  noTone(BUZZER);
-  delay(100);
-  
-  tone(BUZZER, NOTE_B6);
-  delay(100);
-  noTone(BUZZER);
-  delay(100);
-  
   tone(BUZZER, NOTE_E7);
+  delay(100);
+  noTone(BUZZER);
+  delay(100);
+  
+  tone(BUZZER, NOTE_G7);
+  delay(100);
+  noTone(BUZZER);
+  delay(100);
+  
+  tone(BUZZER, NOTE_A7);
+  delay(100);
+  noTone(BUZZER);
+  delay(100);
+  
+  tone(BUZZER, NOTE_B7);
+  delay(100);
+  noTone(BUZZER);
+  delay(100);
+  
+  tone(BUZZER, NOTE_E8);
   delay(200);
   noTone(BUZZER);
 }
 
 void playAccessDeniedJingle() {
-  tone(BUZZER, NOTE_E7);
+  tone(BUZZER, NOTE_C7);
   delay(100);
   noTone(BUZZER);
   delay(100);
 
   tone(BUZZER, NOTE_D7);
+  delay(50);
+  noTone(BUZZER);
+  delay(50);
+
+  tone(BUZZER, NOTE_E7);
+  delay(150);
+  noTone(BUZZER);
+  delay(50);
+
+  // Second sequence: descending quickly
+  tone(BUZZER, NOTE_G7);
   delay(100);
   noTone(BUZZER);
+  delay(50);
+
+  tone(BUZZER, NOTE_F7);
+  delay(50);
+  noTone(BUZZER);
+  delay(50);
+
+  tone(BUZZER, NOTE_E7);
   delay(100);
+  noTone(BUZZER);
+  delay(50);
+
+  tone(BUZZER, NOTE_D7);
+  delay(100);
+  noTone(BUZZER);
+  delay(50);
 
   tone(BUZZER, NOTE_C7);
-  delay(300);
+  delay(200);
   noTone(BUZZER);
 }
 
@@ -202,6 +228,8 @@ void verificationLoop() {
   noTone(BUZZER);
   if (pressedKey == '*') {
     inAuthenticationProcess = false;
+    z1=0; z2=1; z3=1; z4=1;
+    verificationMessage = "Code: ";
     Serial.println("Aborted Code verification.");
     printCenteredText("Aborted", "Verification");
     delay(1000);
@@ -267,6 +295,7 @@ void verificationLoop() {
       digitalWrite(RED_LIGHT, HIGH);
       digitalWrite(GREEN_LIGHT, LOW);
       printCenteredText("Access denied!");
+      delay(200);
       playAccessDeniedJingle();
       delay(2000);
       z1=0; z2=1; z3=1; z4=1;
