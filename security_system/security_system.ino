@@ -60,6 +60,7 @@ void setup() {
   servo.attach(SERVO);
   lcd.init();
   lcd.backlight();
+  noTone(BUZZER);
 
   pinMode(RED_LIGHT, OUTPUT);
   pinMode(GREEN_LIGHT, OUTPUT);
