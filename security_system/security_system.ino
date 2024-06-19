@@ -4,7 +4,7 @@
 #include <MFRC522.h>
 #include <Keypad.h>
 #include <Servo.h>
-#include "pitches.h"
+#include "sounds.h"
 
 #define RFID_SS_PIN 10
 #define RFID_RST_PIN A1
@@ -48,6 +48,8 @@ AuthorizedUser authorizedUsers[3] = {
   {2076320, "Jakob", {'3', '1', '4', '8'}}
 };
 
+AuthorizedUser* currentUser;
+
 int remainingAttempts = 3;
 bool inAuthenticationProcess = false;
 String verificationMessage = "Code: ";
@@ -69,15 +71,6 @@ void setup() {
   pinMode(KLINGEL_PIN, INPUT);
 }
 
-AuthorizedUser* getUserByCardId(long id) {
-  for (int i = 0; i < (sizeof(authorizedUsers)/sizeof(authorizedUsers[0])); i++) {
-    if (authorizedUsers[i].chipId == id) {
-      return &authorizedUsers[i];
-    }
-  }
-  return NULL;
-}
-
 void printCenteredText(String text, String text2) {
   lcd.clear();
   if (text != "") {
@@ -92,36 +85,19 @@ void printCenteredText(String text, String text2) {
   }
 }
 
-void printCenteredText(String text) {
-  printCenteredText(text, "");
+void printCenteredText(String text) { printCenteredText(text, ""); }
+
+void openDoor() {
+  //TODO OPEN DOOR
 }
 
-void accessGrantedSound() {
-  tone(BUZZER, NOTE_E7);
-  delay(50);
-  noTone(BUZZER);
-  delay(50);
-  tone(BUZZER, NOTE_G7);
-  delay(100);
-  noTone(BUZZER);
-  tone(BUZZER, NOTE_C8);
-  delay(50);
-  noTone(BUZZER);
+void cancelVerification() {
+  inAuthenticationProcess = false;
+  z1=0; z2=1; z3=1; z4=1;
+  verificationMessage = "Code: ";
+  currentUser = NULL;
+  lcd.clear();
 }
-
-void accessDeniedSound() {
-  tone(BUZZER, NOTE_E7);
-  delay(50);
-  noTone(BUZZER);
-  delay(50);
-  tone(BUZZER, NOTE_E7);
-  delay(100);
-  noTone(BUZZER);
-  tone(BUZZER, NOTE_E7);
-  delay(50);
-  noTone(BUZZER);
-}
-
 
 void execution() {
   printCenteredText("INITIATING SELF", "DEFENCE PROTOCOL!");
@@ -136,11 +112,34 @@ void execution() {
   digitalWrite(TASER_PIN, HIGH);
   delay (1500);
   digitalWrite(TASER_PIN, LOW);
-  delay (1500);
+  delay(1500);
+  cancelVerification();
   lcd.clear();
+} 
+
+int handleBell() {
+  if (digitalRead(KLINGEL_PIN) == HIGH) {
+    lcd.clear();
+    lcd.print("Ringing...");
+    tone(BUZZER, NOTE_E5);
+    delay(400);
+    tone(BUZZER, NOTE_C5);
+    delay(600);
+    noTone(BUZZER);
+    delay(1000);
+    lcd.clear();
+    return 1;
+  }
+  return 0;
 }
 
-AuthorizedUser* currentUser;
+AuthorizedUser* getUserByCardId(long id) {
+  for (int i = 0; i < (sizeof(authorizedUsers)/sizeof(authorizedUsers[0])); i++) {
+    if (authorizedUsers[i].chipId == id) 
+      return &authorizedUsers[i];
+  }
+  return NULL;
+}
 
 void verifyCode(AuthorizedUser* user) {
   inAuthenticationProcess = true;
@@ -151,76 +150,9 @@ void verifyCode(AuthorizedUser* user) {
   verificationLoop();
 }
 
-
-void playAccessGrantedJingle() {
-  tone(BUZZER, NOTE_E7);
-  delay(100);
-  noTone(BUZZER);
-  delay(100);
-  
-  tone(BUZZER, NOTE_G7);
-  delay(100);
-  noTone(BUZZER);
-  delay(100);
-  
-  tone(BUZZER, NOTE_A7);
-  delay(100);
-  noTone(BUZZER);
-  delay(100);
-  
-  tone(BUZZER, NOTE_B7);
-  delay(100);
-  noTone(BUZZER);
-  delay(100);
-  
-  tone(BUZZER, NOTE_E8);
-  delay(200);
-  noTone(BUZZER);
-}
-
-void playAccessDeniedJingle() {
-  tone(BUZZER, NOTE_C7);
-  delay(100);
-  noTone(BUZZER);
-  delay(100);
-
-  tone(BUZZER, NOTE_D7);
-  delay(50);
-  noTone(BUZZER);
-  delay(50);
-
-  tone(BUZZER, NOTE_E7);
-  delay(150);
-  noTone(BUZZER);
-  delay(50);
-
-  // Second sequence: descending quickly
-  tone(BUZZER, NOTE_G7);
-  delay(100);
-  noTone(BUZZER);
-  delay(50);
-
-  tone(BUZZER, NOTE_F7);
-  delay(50);
-  noTone(BUZZER);
-  delay(50);
-
-  tone(BUZZER, NOTE_E7);
-  delay(100);
-  noTone(BUZZER);
-  delay(50);
-
-  tone(BUZZER, NOTE_D7);
-  delay(100);
-  noTone(BUZZER);
-  delay(50);
-
-  tone(BUZZER, NOTE_C7);
-  delay(200);
-  noTone(BUZZER);
-}
-
 void verificationLoop() {
+  if (handleBell() == 1) 
+    lcd.print(verificationMessage);
   verificationStart:
   pressedKey = keyfield.getKey();
   if (!pressedKey) { return; }
@@ -228,19 +160,29 @@ void verificationLoop() {
   delay(50);
   noTone(BUZZER);
   if (pressedKey == '*') {
-    inAuthenticationProcess = false;
-    z1=0; z2=1; z3=1; z4=1;
-    verificationMessage = "Code: ";
+    cancelVerification();
     Serial.println("Aborted Code verification.");
     printCenteredText("Aborted", "Verification");
-    delay(1000);
+    delay(50);
+    tone(BUZZER, NOTE_C7);
+    delay(50);
+    noTone(BUZZER);
+    delay(50);
+    tone(BUZZER, NOTE_G6);
+    delay(50);
+    noTone(BUZZER);
+    delay(800);
     lcd.clear();
     return;
   }
 
   if (pressedKey == '#') {
     printCenteredText("Input", "Resetted");
-    delay(2000);
+    delay(50);
+    tone(BUZZER, NOTE_C7);
+    delay(50);
+    noTone(BUZZER);
+    delay(1000);
     lcd.clear();
     z1=0; z2=1; z3=1; z4=1;
     verificationMessage = "Code: ";
@@ -258,47 +200,52 @@ void verificationLoop() {
     z1=1; z2=0; z3=1; z4=1;
     goto verificationStart;
   }
-
   if (z2 == 0) {
     C2 = pressedKey;
     z1=1; z2=1; z3=0; z4=1;
     goto verificationStart;
   }
-
   if (z3 == 0) {
     C3 = pressedKey;
     z1=1; z2=1; z3=1; z4=0;
     goto verificationStart;
   }
-
   if (z4 == 0) {
     C4 = pressedKey;
     z1=1; z2=1; z3=1; z4=1;
 
     if (C1 == currentUser->code[0] && C2 == currentUser->code[1] && C3 == currentUser->code[2] && C4 == currentUser->code[3]) {
       Serial.println("Code correct!");
-      //servoblau.write(0);
       digitalWrite(RED_LIGHT, LOW);
       digitalWrite(GREEN_LIGHT, HIGH);
       printCenteredText("Access granted");
+      openDoor();
       delay(300);
       String message = "Welcome " + currentUser->username;
       printCenteredText("Access granted", message);
       playAccessGrantedJingle();
       delay(2000);
-      lcd.clear();
-      currentUser = NULL;
-      inAuthenticationProcess = false;
-      z1=0; z2=1; z3=1; z4=1;
-      verificationMessage = "Code: ";
+      cancelVerification();
     } else {
       Serial.println ("Code falsch");
       digitalWrite(RED_LIGHT, HIGH);
       digitalWrite(GREEN_LIGHT, LOW);
+      remainingAttempts -= 1;
       printCenteredText("Access denied!");
-      delay(200);
-      playAccessDeniedJingle();
-      delay(2000);
+      playAccessDeniedJingle1();
+      lcd.clear();
+      lcd.setCursor(3, 0);
+      lcd.print("Remaining");
+      lcd.setCursor(2, 1);
+      lcd.print("attempts: ");
+      lcd.setCursor(12, 1);
+      lcd.print(remainingAttempts);
+      playAccessDeniedJingle2();
+      if (remainingAttempts <= 0) {
+        remainingAttempts = 3;
+        execution();
+        return;
+      }
       z1=0; z2=1; z3=1; z4=1;
       verificationMessage = "Code: ";
       lcd.clear();
@@ -309,32 +256,7 @@ void verificationLoop() {
 }
 
 
-void loop() {
-
-  if (inAuthenticationProcess == true) {
-    verificationLoop();
-    return;
-  }
-
-  lcd.setCursor(5, 0);
-  lcd.print("Welcome");
-  lcd.setCursor(0, 1);
-  lcd.print("Insert Chipcard");
-
-  // Klingel
-  if (digitalRead(KLINGEL_PIN) == HIGH) {
-    lcd.clear();
-    lcd.print("Ringing...");
-    tone(BUZZER, NOTE_E5);
-    delay(400);
-    tone(BUZZER, NOTE_C5);
-    delay(600);
-    noTone(BUZZER);
-    delay(1000);
-    lcd.clear();
-  }
- 
-  // NFC Kontrolle  
+void verifyRFID() {
   if (!rfidScanner.PICC_IsNewCardPresent()) { return; }
   if (!rfidScanner.PICC_ReadCardSerial()) { return; }
  
@@ -362,7 +284,7 @@ void loop() {
     lcd.print("attempts: ");
     lcd.setCursor(12, 1);
     lcd.print(remainingAttempts);
-    delay (2000);
+    delay(2000);
     if (remainingAttempts <= 0) {
       remainingAttempts = 3;
       execution();
@@ -371,7 +293,7 @@ void loop() {
     return;
   }
   // Access granted
-  digitalWrite (GREEN_LIGHT, HIGH); 
+  digitalWrite(GREEN_LIGHT, HIGH); 
   delay(100);
   printCenteredText("Chipcard", "Verified");
   accessGrantedSound();
@@ -379,4 +301,20 @@ void loop() {
   digitalWrite (GREEN_LIGHT, LOW);
   lcd.clear();
   verifyCode(user);
+}
+
+
+
+void loop() {
+  if (inAuthenticationProcess == true) {
+    verificationLoop();
+    return;
+  }
+  lcd.setCursor(5, 0);
+  lcd.print("Welcome");
+  lcd.setCursor(0, 1);
+  lcd.print("Insert Chipcard");
+
+  handleBell();
+  verifyRFID();
 }

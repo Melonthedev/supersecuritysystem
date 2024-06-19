@@ -2,6 +2,14 @@
    Public Constants
  *************************************************/
 
+#define DURATION_SIXTEENTH 125
+#define DURATION_EIGHTH 250
+#define DURATION_DOTTED_EIGHTH 375
+#define DURATION_QUARTER 500
+#define DURATION_DOTTED_QUARTER 750
+#define DURATION_HALF 1000
+
+
 #define NOTE_B0  31
 #define NOTE_C1  33
 #define NOTE_CS1 35
